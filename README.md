@@ -23,6 +23,6 @@ A command-line To-Do List application with priority levels, dual‑format storag
 
 ```bash
 # No external packages required – only Python 3
-git clone https://github.com/Been-07/todo-list-python.git
-cd todo-list-python
+git clone https://github.com/Been-07/to-do-list.git
+cd to-do-list
 ```
