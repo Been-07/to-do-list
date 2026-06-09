@@ -120,8 +120,16 @@ def main():
         if choice == 1:
             name = input("Task name: ")
             explanation = input("Description: ")
-            priority = input("Priority (very low, low, medium, high, very high): ")
-            to_do_list.add_task(name,explanation,priority)
+            
+            valid_priorities = ['very low', 'low', 'medium', 'high', 'very high']
+            while True:
+                priority = input("Priority (very low, low, medium, high, very high): ").strip().lower()
+                priority = ' '.join(priority.split())
+                if priority in valid_priorities:
+                    break
+                else:
+                    print(f"Invalid priority! Please choose from: {', '.join(valid_priorities)}")
+            to_do_list.add_task(name, explanation, priority)
             print("Task added ")
         elif choice == 2:
             to_do_list.show_task()
