@@ -3,200 +3,175 @@
 # GitHub: https://github.com/Been-07    |
 # ORCID: 0009-0005-2756-7140            |
 # ======================================|
+
 import csv
 import json
 
+# Class for each task
 class Task:
-    def __init__(self, name, explanation, priority):
+    def __init__(self, name, desc, priority):
         self.name = name
-        self.explanation = explanation
+        self.desc = desc
         self.priority = priority
 
     def __str__(self):
-        return f"{self.name} , {self.explanation} , Priority: {self.priority}"
+        return f"{self.name} - {self.desc} [{self.priority}]"
 
 
-class ToDoList:
+# Main todo list manager
+class TodoList:
     def __init__(self):
-        # task storage
         self.tasks = []
+        self.file_name = "tasks"
+        self.format = "csv"   # csv or json
+        self.load_data()
 
-        # default file config
-        self.filename_base = "tasks"
-        self.storage_format = "csv"
+    # Add new task
+    def add_task(self, name, desc, priority):
+        t = Task(name, desc, priority)
+        self.tasks.append(t)
+        self.save_data()
 
-        # load saved tasks if available
-        self.load()
-
-    def add_task(self, name, explanation, priority):
-        self.tasks.append(Task(name, explanation, priority))
-
-        # save after update
-        self.save()
-
+    # Remove by index (1-based for user)
     def remove_task(self, index):
         if 0 <= index < len(self.tasks):
             removed = self.tasks.pop(index)
-            print(f"removed: {removed.name}")
-
-            # persist changes
-            self.save()
+            print(f"Removed: {removed.name}")
+            self.save_data()
         else:
-            print("invalid index")
+            print("Invalid number")
 
-    def show_task(self):
+    # Show all tasks
+    def show_tasks(self):
         if not self.tasks:
-            print("no tasks found")
+            print("No tasks yet")
             return
+        for i, t in enumerate(self.tasks, start=1):
+            print(f"{i}. {t}")
 
-        for i, task in enumerate(self.tasks, start=1):
-            print(f"{i}- {task}")
+    # Get full filename with extension
+    def get_filename(self):
+        if self.format == "csv":
+            return self.file_name + ".csv"
+        return self.file_name + ".json"
 
-    def _get_filename(self):
-        if self.storage_format == "csv":
-            return self.filename_base + ".csv"
-        return self.filename_base + ".json"
-    def save_to_csv(self, filename):
-        with open(filename, mode="w", newline="", encoding="utf-8") as file:
-            writer = csv.writer(file)
+    # Save to CSV
+    def save_csv(self, filename):
+        with open(filename, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["name", "desc", "priority"])
+            for t in self.tasks:
+                writer.writerow([t.name, t.desc, t.priority])
 
-            # table header
-            writer.writerow(["name", "explanation", "priority"])
-
-            for task in self.tasks:
-                writer.writerow([task.name, task.explanation, task.priority])
-
-    def load_from_csv(self, filename):
+    # Load from CSV
+    def load_csv(self, filename):
         try:
-            with open(filename, mode="r", encoding="utf-8") as file:
-                reader = csv.reader(file)
-
-                # skip header row
-                next(reader)
-
+            with open(filename, "r", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                next(reader)  # skip header
                 for row in reader:
                     if len(row) >= 3:
                         self.tasks.append(Task(row[0], row[1], row[2]))
-
         except FileNotFoundError:
-            print("csv file not found")
+            print("No saved file found (csv)")
 
-    def save_to_json(self, filename):
+    # Save to JSON
+    def save_json(self, filename):
         data = []
+        for t in self.tasks:
+            data.append({"name": t.name, "desc": t.desc, "priority": t.priority})
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
 
-        for task in self.tasks:
-            data.append({
-                "name": task.name,
-                "explanation": task.explanation,
-                "priority": task.priority
-            })
-
-        with open(filename, mode="w", encoding="utf-8") as file:
-            json.dump(data, file, indent=4, ensure_ascii=False)
-
-    def load_from_json(self, filename):
+    # Load from JSON
+    def load_json(self, filename):
         try:
-            with open(filename, mode="r", encoding="utf-8") as file:
-                data = json.load(file)
-
+            with open(filename, "r", encoding="utf-8") as f:
+                data = json.load(f)
                 for item in data:
-                    self.tasks.append(
-                        Task(
-                            item["name"],
-                            item["explanation"],
-                            item["priority"]
-                        )
-                    )
-
+                    self.tasks.append(Task(item["name"], item["desc"], item["priority"]))
         except FileNotFoundError:
-            print("json file not found")
+            print("No saved file found (json)")
 
-    def save(self):
-        filename = self._get_filename()
-
-        if self.storage_format == "csv":
-            self.save_to_csv(filename)
+    # Universal save
+    def save_data(self):
+        filename = self.get_filename()
+        if self.format == "csv":
+            self.save_csv(filename)
         else:
-            self.save_to_json(filename)
+            self.save_json(filename)
 
-    def load(self):
-        filename = self._get_filename()
-
-        if self.storage_format == "csv":
-            self.load_from_csv(filename)
+    # Universal load
+    def load_data(self):
+        filename = self.get_filename()
+        if self.format == "csv":
+            self.load_csv(filename)
         else:
-            self.load_from_json(filename)
+            self.load_json(filename)
 
+    # Change format and save immediately
     def change_format(self, new_format):
         if new_format in ["csv", "json"]:
-            self.storage_format = new_format
-            self.save()
-            print("format updated")
+            self.format = new_format
+            self.save_data()
+            print("Format changed")
         else:
-            print("invalid format")
+            print("Invalid format")
 
+
+# Main menu
 def main():
-    todo_list = ToDoList()
+    todo = TodoList()
 
-    # simple menu loop
     while True:
-        print("=" * 60)
-        print("TO-DO LIST".center(60))
+        print("\n" + "=" * 50)
+        print("TODO LIST".center(50))
         print("1. Add task")
         print("2. Remove task")
         print("3. Show tasks")
-        print(f"4. Change format ({todo_list.storage_format})")
+        print("4. Change format (current: " + todo.format + ")")
         print("5. Exit")
 
         try:
-            choice = int(input("Choose option: "))
+            choice = int(input("Choose: "))
         except ValueError:
-            print("enter a valid number")
+            print("Enter a number")
             continue
 
         if choice == 1:
-            name = input("task name: ")
-            explanation = input("description: ")
-
-            valid_priorities = ["very low", "low", "medium", "high", "very high"]
-
+            name = input("Name: ")
+            desc = input("Description: ")
+            # Simple priority validation (just a loop)
             while True:
-                priority = input("priority: ").strip().lower()
-                priority = " ".join(priority.split())
-
-                if priority in valid_priorities:
+                p = input("Priority (low/medium/high): ").lower()
+                if p in ["low", "medium", "high"]:
                     break
-
-                print("invalid priority")
-
-            todo_list.add_task(name, explanation, priority)
-            print("task added")
+                print("Invalid, try again")
+            todo.add_task(name, desc, p)
+            print("Task added")
 
         elif choice == 2:
-            todo_list.show_task()
-
-            if todo_list.tasks:
+            todo.show_tasks()
+            if todo.tasks:
                 try:
-                    index = int(input("task number to remove: ")) - 1
-                    todo_list.remove_task(index)
+                    idx = int(input("Number to remove: ")) - 1
+                    todo.remove_task(idx)
                 except ValueError:
-                    print("invalid input")
-            else:
-                print("nothing to remove")
+                    print("Invalid input")
 
         elif choice == 3:
-            todo_list.show_task()
+            todo.show_tasks()
 
         elif choice == 4:
-            new_format = input("csv or json: ").strip().lower()
-            todo_list.change_format(new_format)
+            new_f = input("Enter 'csv' or 'json': ").lower()
+            todo.change_format(new_f)
 
         elif choice == 5:
-            print("bye")
+            print("Bye")
             break
 
         else:
-            print("invalid option")
+            print("Invalid option")
 
 
 if __name__ == "__main__":
